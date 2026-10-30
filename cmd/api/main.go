@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/malfermitas/secunda-task-management-service/internal/interfaces/http/handler"
 )
 
 func main() {
@@ -16,19 +19,16 @@ func main() {
 		port = "8080"
 	}
 
-	r := gin.Default()
-
-	r.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	router := handler.NewRouter(handler.Dependencies{})
 
 	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: r,
+		Addr:              ":" + port,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	slog.Info("starting api", "port", port)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("server stopped", "error", err)
 		os.Exit(1)
 	}

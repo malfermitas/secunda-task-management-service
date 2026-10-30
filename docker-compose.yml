@@ -70,24 +70,20 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      APP_PORT: "8080"
-      DB_HOST: mysql
-      DB_PORT: "3306"
+      APP_PORT: ${APP_PORT:-8080}
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER:-taskuser}
       DB_PASSWORD: ${DB_PASSWORD:-taskpass}
       DB_NAME: ${DB_NAME:-taskdb}
-      REDIS_ADDR: redis:6379
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (see .env.example)}
       JWT_TTL: ${JWT_TTL:-24h}
       CACHE_TTL: ${CACHE_TTL:-5m}
-      RATE_LIMIT_AUTH_RPM: ${RATE_LIMIT_AUTH_RPM:-10}
-      CB_MAX_REQUESTS: ${CB_MAX_REQUESTS:-1}
-      CB_INTERVAL: ${CB_INTERVAL:-30s}
-      CB_TIMEOUT: ${CB_TIMEOUT:-10s}
     ports:
-      - "${APP_PORT:-8080}:8080"
+      - "${APP_PORT:-8080}:${APP_PORT:-8080}"
     networks:
       - backend
 
