@@ -5,12 +5,9 @@ import (
 
 	"secunda-task-management-service/internal/interfaces/http/dto"
 	taskapp "secunda-task-management-service/internal/task/app"
-	taskdomain "secunda-task-management-service/internal/task/domain"
 
 	"github.com/gin-gonic/gin"
 )
-
-const defaultTaskLimit = 20
 
 // TasksHandler handles task, history and comment endpoints.
 type TasksHandler struct {
@@ -59,16 +56,13 @@ func (h *TasksHandler) List(c *gin.Context) {
 
 	in := taskapp.ListInput{
 		TeamID:     query.TeamID,
+		Status:     &query.Status,
 		AssigneeID: query.AssigneeID,
 		Limit:      query.Limit,
 		Offset:     query.Offset,
 	}
-	if in.Limit == 0 {
-		in.Limit = defaultTaskLimit
-	}
-	if query.Status != "" {
-		status := taskdomain.Status(query.Status)
-		in.Status = &status
+	if query.Status == "" {
+		in.Status = nil
 	}
 
 	result, err := h.svc.List(c.Request.Context(), userID, in)
@@ -106,7 +100,7 @@ func (h *TasksHandler) Update(c *gin.Context) {
 	task, err := h.svc.Update(c.Request.Context(), userID, taskID, taskapp.UpdateInput{
 		Title:       req.Title,
 		Description: req.Description,
-		Status:      statusPtr(req.Status),
+		Status:      req.Status,
 		AssigneeID:  req.AssigneeID,
 		Version:     req.Version,
 	})
@@ -185,12 +179,4 @@ func (h *TasksHandler) ListComments(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.NewCommentResponses(comments))
-}
-
-func statusPtr(status *string) *taskdomain.Status {
-	if status == nil {
-		return nil
-	}
-	value := taskdomain.Status(*status)
-	return &value
 }

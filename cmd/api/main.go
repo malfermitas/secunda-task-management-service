@@ -7,8 +7,9 @@ import (
 	"os"
 	"time"
 
+	"secunda-task-management-service/internal/interfaces/http/handler"
+
 	"github.com/gin-gonic/gin"
-	"github.com/malfermitas/secunda-task-management-service/internal/interfaces/http/handler"
 )
 
 func main() {

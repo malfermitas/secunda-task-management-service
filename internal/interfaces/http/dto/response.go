@@ -3,9 +3,9 @@ package dto
 import (
 	"time"
 
-	taskdomain "github.com/malfermitas/secunda-task-management-service/internal/task/domain"
-	teamdomain "github.com/malfermitas/secunda-task-management-service/internal/team/domain"
-	userdomain "github.com/malfermitas/secunda-task-management-service/internal/user/domain"
+	taskdomain "secunda-task-management-service/internal/task/domain"
+	teamdomain "secunda-task-management-service/internal/team/domain"
+	userdomain "secunda-task-management-service/internal/user/domain"
 )
 
 // UserResponse is the public representation of a user.
