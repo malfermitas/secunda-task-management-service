@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	mysqlDriver "github.com/go-sql-driver/mysql"
@@ -18,11 +19,11 @@ func Open(ctx context.Context, cfg config.DB) (*sqlx.DB, error) {
 	driverCfg.User = cfg.User
 	driverCfg.Passwd = cfg.Password
 	driverCfg.Net = "tcp"
-	driverCfg.Addr = net.JoinHostPort(cfg.Host, cfg.Port)
+	driverCfg.Addr = net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port))
 	driverCfg.DBName = cfg.Name
 	driverCfg.ParseTime = true
 	driverCfg.Loc = time.UTC
-	driverCfg.Timeout = 5 * time.Second
+	driverCfg.Timeout = cfg.ConnectTimeout
 	driverCfg.Params = map[string]string{
 		"charset":   "utf8mb4",
 		"time_zone": "'+00:00'",
@@ -33,12 +34,12 @@ func Open(ctx context.Context, cfg config.DB) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("open mysql: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	db.SetConnMaxLifetime(5 * time.Minute)
-	db.SetConnMaxIdleTime(5 * time.Minute)
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
 
-	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, cfg.ConnectTimeout)
 	defer cancel()
 	if err := db.PingContext(pingCtx); err != nil {
 		_ = db.Close()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"secunda-task-management-service/internal/shared"
 	"secunda-task-management-service/internal/shared/errs"
 	taskdomain "secunda-task-management-service/internal/task/domain"
 	teamdomain "secunda-task-management-service/internal/team/domain"
@@ -75,10 +76,15 @@ func (s *service) List(ctx context.Context, actorID int64, in ListInput) (*TaskL
 		Offset:     in.Offset,
 	}
 
+	filterKey := in.FilterKey()
+	var cacheKey CacheKey
+
 	if s.cache != nil {
-		if cached, ok := s.cache.GetTasks(ctx, in.TeamID); ok && cached != nil {
+		cached, key, ok := s.cache.GetTasks(ctx, in.TeamID, filterKey)
+		if ok && cached != nil {
 			return cached, nil
 		}
+		cacheKey = key
 	}
 
 	page, err := s.tasks.List(ctx, filter)
@@ -86,7 +92,6 @@ func (s *service) List(ctx context.Context, actorID int64, in ListInput) (*TaskL
 		return nil, err
 	}
 
-	total := page.Total
 	result := &TaskList{
 		Items:  page.Items,
 		Total:  shared.Some(page.Total),
@@ -98,7 +103,7 @@ func (s *service) List(ctx context.Context, actorID int64, in ListInput) (*TaskL
 	}
 
 	if s.cache != nil {
-		s.cache.SetTasks(ctx, in.TeamID, result)
+		s.cache.SetTasks(ctx, in.TeamID, cacheKey, result)
 	}
 	return result, nil
 }

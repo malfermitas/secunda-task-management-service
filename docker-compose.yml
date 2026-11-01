@@ -71,17 +71,33 @@ services:
         condition: service_completed_successfully
     environment:
       APP_PORT: ${APP_PORT:-8080}
+      APP_READ_HEADER_TIMEOUT: ${APP_READ_HEADER_TIMEOUT:-5s}
+      APP_READ_TIMEOUT: ${APP_READ_TIMEOUT:-15s}
+      APP_WRITE_TIMEOUT: ${APP_WRITE_TIMEOUT:-15s}
+      APP_IDLE_TIMEOUT: ${APP_IDLE_TIMEOUT:-60s}
+      APP_SHUTDOWN_TIMEOUT: ${APP_SHUTDOWN_TIMEOUT:-10s}
       DB_HOST: ${DB_HOST:-mysql}
       DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER:-taskuser}
       DB_PASSWORD: ${DB_PASSWORD:-taskpass}
       DB_NAME: ${DB_NAME:-taskdb}
+      DB_MAX_OPEN_CONNS: ${DB_MAX_OPEN_CONNS:-25}
+      DB_MAX_IDLE_CONNS: ${DB_MAX_IDLE_CONNS:-25}
+      DB_CONN_MAX_LIFETIME: ${DB_CONN_MAX_LIFETIME:-5m}
+      DB_CONN_MAX_IDLE_TIME: ${DB_CONN_MAX_IDLE_TIME:-5m}
+      DB_CONNECT_TIMEOUT: ${DB_CONNECT_TIMEOUT:-5s}
       REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
+      REDIS_POOL_SIZE: ${REDIS_POOL_SIZE:-10}
+      REDIS_DIAL_TIMEOUT: ${REDIS_DIAL_TIMEOUT:-2s}
+      REDIS_READ_TIMEOUT: ${REDIS_READ_TIMEOUT:-1s}
+      REDIS_WRITE_TIMEOUT: ${REDIS_WRITE_TIMEOUT:-1s}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (see .env.example)}
       JWT_TTL: ${JWT_TTL:-24h}
       CACHE_TTL: ${CACHE_TTL:-5m}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
     ports:
       - "${APP_PORT:-8080}:${APP_PORT:-8080}"
     networks:
