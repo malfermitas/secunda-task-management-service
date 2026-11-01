@@ -5,6 +5,10 @@
 .env
 .env.*
 !.env.example
+config.yaml
+config.yml
+config.json
+config.toml
 *.md
 bin
 tmp
