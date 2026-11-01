@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"secunda-task-management-service/internal/shared"
 	taskdomain "secunda-task-management-service/internal/task/domain"
 	teamdomain "secunda-task-management-service/internal/team/domain"
 	userdomain "secunda-task-management-service/internal/user/domain"
@@ -55,17 +56,17 @@ func NewTeamResponses(teams []teamdomain.Team) []TeamResponse {
 
 // TaskResponse is the public representation of a task.
 type TaskResponse struct {
-	ID          int64      `json:"id"`
-	TeamID      int64      `json:"team_id"`
-	Title       string     `json:"title"`
-	Description *string    `json:"description"`
-	Status      string     `json:"status"`
-	CreatedBy   int64      `json:"created_by"`
-	AssigneeID  *int64     `json:"assignee_id"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	ClosedAt    *time.Time `json:"closed_at"`
-	Version     uint       `json:"version"`
+	ID          int64                      `json:"id"`
+	TeamID      int64                      `json:"team_id"`
+	Title       string                     `json:"title"`
+	Description shared.Optional[string]    `json:"description"`
+	Status      string                     `json:"status"`
+	CreatedBy   int64                      `json:"created_by"`
+	AssigneeID  shared.Optional[int64]     `json:"assignee_id"`
+	CreatedAt   time.Time                  `json:"created_at"`
+	UpdatedAt   time.Time                  `json:"updated_at"`
+	ClosedAt    shared.Optional[time.Time] `json:"closed_at"`
+	Version     uint                       `json:"version"`
 }
 
 // NewTaskResponse maps a task entity to a response.

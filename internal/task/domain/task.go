@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"secunda-task-management-service/internal/shared"
 	"secunda-task-management-service/internal/shared/errs"
 )
 
@@ -29,29 +30,29 @@ func (s Status) Valid() bool {
 
 // Task is the task aggregate root.
 type Task struct {
-	ID          int64
-	TeamID      int64
-	Title       string
-	Description *string
-	Status      Status
-	CreatedBy   int64
-	AssigneeID  *int64
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	ClosedAt    *time.Time
-	Version     uint
+	ID          int64                      `json:"id"`
+	TeamID      int64                      `json:"team_id"`
+	Title       string                     `json:"title"`
+	Description shared.Optional[string]    `json:"description"`
+	Status      Status                     `json:"status"`
+	CreatedBy   int64                      `json:"created_by"`
+	AssigneeID  shared.Optional[int64]     `json:"assignee_id"`
+	CreatedAt   time.Time                  `json:"created_at"`
+	UpdatedAt   time.Time                  `json:"updated_at"`
+	ClosedAt    shared.Optional[time.Time] `json:"closed_at"`
+	Version     uint                       `json:"version"`
 }
 
-// TaskUpdate contains fields to change on a task. Nil fields are unchanged.
+// TaskUpdate contains fields to change on a task. None fields are unchanged.
 type TaskUpdate struct {
-	Title       *string
-	Description *string
-	Status      *Status
-	AssigneeID  *int64
+	Title       shared.Optional[string]
+	Description shared.Optional[string]
+	Status      shared.Optional[Status]
+	AssigneeID  shared.Optional[int64]
 }
 
 // NewTask creates a validated task entity in the todo state.
-func NewTask(teamID int64, title string, description *string, createdBy int64, assigneeID *int64, now time.Time) (*Task, error) {
+func NewTask(teamID int64, title string, description shared.Optional[string], createdBy int64, assigneeID shared.Optional[int64], now time.Time) (*Task, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return nil, errs.Validation("task title is required")
@@ -65,7 +66,7 @@ func NewTask(teamID int64, title string, description *string, createdBy int64, a
 	if createdBy <= 0 {
 		return nil, errs.Validation("creator id is required")
 	}
-	if assigneeID != nil && *assigneeID <= 0 {
+	if value, ok := assigneeID.TryUnwrap(); ok && value <= 0 {
 		return nil, errs.Validation("assignee id must be positive")
 	}
 
@@ -73,10 +74,10 @@ func NewTask(teamID int64, title string, description *string, createdBy int64, a
 	return &Task{
 		TeamID:      teamID,
 		Title:       title,
-		Description: copyPtr(description),
+		Description: description,
 		Status:      StatusTodo,
 		CreatedBy:   createdBy,
-		AssigneeID:  copyPtr(assigneeID),
+		AssigneeID:  assigneeID,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 		Version:     0,
@@ -88,8 +89,8 @@ func NewTask(teamID int64, title string, description *string, createdBy int64, a
 func (t *Task) ApplyUpdate(update TaskUpdate, now time.Time) (map[string]any, error) {
 	changes := make(map[string]any)
 
-	if update.Title != nil {
-		title := strings.TrimSpace(*update.Title)
+	if value, ok := update.Title.TryUnwrap(); ok {
+		title := strings.TrimSpace(value)
 		if title == "" {
 			return nil, errs.Validation("task title is required")
 		}
@@ -102,36 +103,39 @@ func (t *Task) ApplyUpdate(update TaskUpdate, now time.Time) (map[string]any, er
 		}
 	}
 
-	if update.Description != nil && !equalPtr(t.Description, update.Description) {
-		changes["description"] = fieldChange(deref(t.Description), deref(update.Description))
-		t.Description = copyPtr(update.Description)
+	if value, ok := update.Description.TryUnwrap(); ok {
+		if old, oldOK := t.Description.TryUnwrap(); !oldOK || old != value {
+			changes["description"] = fieldChange(old, value)
+			t.Description = shared.Some(value)
+		}
 	}
 
-	if update.Status != nil && *update.Status != t.Status {
-		if !update.Status.Valid() {
-			return nil, ErrInvalidStatus(string(*update.Status))
+	if value, ok := update.Status.TryUnwrap(); ok && value != t.Status {
+		if !value.Valid() {
+			return nil, ErrInvalidStatus(string(value))
 		}
-		changes["status"] = fieldChange(string(t.Status), string(*update.Status))
-		t.Status = *update.Status
+		changes["status"] = fieldChange(string(t.Status), string(value))
+		t.Status = value
 
 		oldClosedAt := t.ClosedAt
 		if t.Status == StatusDone {
-			closedAt := now.UTC()
-			t.ClosedAt = &closedAt
+			t.ClosedAt = shared.Some(now.UTC())
 		} else {
-			t.ClosedAt = nil
+			t.ClosedAt = shared.None[time.Time]()
 		}
-		if !equalPtr(oldClosedAt, t.ClosedAt) {
-			changes["closed_at"] = fieldChange(deref(oldClosedAt), deref(t.ClosedAt))
+		if !oldClosedAt.Equal(t.ClosedAt) {
+			changes["closed_at"] = fieldChange(oldClosedAt, t.ClosedAt)
 		}
 	}
 
-	if update.AssigneeID != nil && !equalPtr(t.AssigneeID, update.AssigneeID) {
-		if *update.AssigneeID <= 0 {
+	if value, ok := update.AssigneeID.TryUnwrap(); ok {
+		if value <= 0 {
 			return nil, errs.Validation("assignee id must be positive")
 		}
-		changes["assignee_id"] = fieldChange(deref(t.AssigneeID), deref(update.AssigneeID))
-		t.AssigneeID = copyPtr(update.AssigneeID)
+		if old, oldOK := t.AssigneeID.TryUnwrap(); !oldOK || old != value {
+			changes["assignee_id"] = fieldChange(t.AssigneeID, value)
+			t.AssigneeID = shared.Some(value)
+		}
 	}
 
 	if len(changes) == 0 {
@@ -210,26 +214,4 @@ func ErrNoChanges() *errs.Error {
 
 func fieldChange(oldValue, newValue any) map[string]any {
 	return map[string]any{"old": oldValue, "new": newValue}
-}
-
-func copyPtr[T any](value *T) *T {
-	if value == nil {
-		return nil
-	}
-	copied := *value
-	return &copied
-}
-
-func equalPtr[T comparable](a, b *T) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	return *a == *b
-}
-
-func deref[T any](value *T) any {
-	if value == nil {
-		return nil
-	}
-	return *value
 }

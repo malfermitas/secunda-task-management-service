@@ -10,7 +10,7 @@ import (
 type Filter struct {
 	TeamID     int64
 	Status     shared.Optional[Status]
-	AssigneeID *int64
+	AssigneeID shared.Optional[int64]
 	Limit      int
 	Offset     int
 }

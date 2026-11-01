@@ -10,6 +10,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
+	"secunda-task-management-service/internal/shared"
 	taskdomain "secunda-task-management-service/internal/task/domain"
 )
 
@@ -53,16 +54,13 @@ func (row taskRow) toDomain() *taskdomain.Task {
 		Version:   uint(row.Version),
 	}
 	if row.Description.Valid {
-		description := row.Description.String
-		task.Description = &description
+		task.Description = shared.Some(row.Description.String)
 	}
 	if row.AssigneeID.Valid {
-		assigneeID := row.AssigneeID.Int64
-		task.AssigneeID = &assigneeID
+		task.AssigneeID = shared.Some(row.AssigneeID.Int64)
 	}
 	if row.ClosedAt.Valid {
-		closedAt := row.ClosedAt.Time
-		task.ClosedAt = &closedAt
+		task.ClosedAt = shared.Some(row.ClosedAt.Time)
 	}
 	return task
 }
@@ -145,9 +143,9 @@ func (r *TaskRepository) List(ctx context.Context, filter taskdomain.Filter) (*t
 		conditions = append(conditions, "status = ?")
 		args = append(args, string(status))
 	}
-	if filter.AssigneeID != nil {
+	if assigneeID, ok := filter.AssigneeID.TryUnwrap(); ok {
 		conditions = append(conditions, "assignee_id = ?")
-		args = append(args, *filter.AssigneeID)
+		args = append(args, assigneeID)
 	}
 
 	where := strings.Join(conditions, " AND ")
@@ -355,23 +353,23 @@ func fieldChange(oldValue, newValue any) map[string]any {
 	return map[string]any{"old": oldValue, "new": newValue}
 }
 
-func nullableString(value *string) any {
-	if value == nil {
-		return nil
+func nullableString(value shared.Optional[string]) any {
+	if unwrapped, ok := value.TryUnwrap(); ok {
+		return unwrapped
 	}
-	return *value
+	return nil
 }
 
-func nullableInt64(value *int64) any {
-	if value == nil {
-		return nil
+func nullableInt64(value shared.Optional[int64]) any {
+	if unwrapped, ok := value.TryUnwrap(); ok {
+		return unwrapped
 	}
-	return *value
+	return nil
 }
 
-func nullableTime(value *time.Time) any {
-	if value == nil {
-		return nil
+func nullableTime(value shared.Optional[time.Time]) any {
+	if unwrapped, ok := value.TryUnwrap(); ok {
+		return unwrapped
 	}
-	return *value
+	return nil
 }

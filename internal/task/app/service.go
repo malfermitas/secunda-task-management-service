@@ -20,6 +20,8 @@ type service struct {
 	cache Cache
 }
 
+var _ Service = (*service)(nil)
+
 // NewService creates the task application service.
 func NewService(tasks taskdomain.Repository, teams teamdomain.Repository, cache Cache) Service {
 	return &service{tasks: tasks, teams: teams, cache: cache}
@@ -29,8 +31,8 @@ func (s *service) Create(ctx context.Context, actorID int64, in CreateInput) (*t
 	if _, err := s.membership(ctx, in.TeamID, actorID); err != nil {
 		return nil, err
 	}
-	if in.AssigneeID != nil {
-		if err := s.validateAssignee(ctx, in.TeamID, *in.AssigneeID); err != nil {
+	if assigneeID, ok := in.AssigneeID.TryUnwrap(); ok {
+		if err := s.validateAssignee(ctx, in.TeamID, assigneeID); err != nil {
 			return nil, err
 		}
 	}
@@ -87,7 +89,7 @@ func (s *service) List(ctx context.Context, actorID int64, in ListInput) (*TaskL
 	total := page.Total
 	result := &TaskList{
 		Items:  page.Items,
-		Total:  &total,
+		Total:  shared.Some(page.Total),
 		Limit:  in.Limit,
 		Offset: in.Offset,
 	}
@@ -125,12 +127,12 @@ func (s *service) Update(ctx context.Context, actorID, taskID int64, in UpdateIn
 		return nil, err
 	}
 
-	if update.AssigneeID != nil {
-		if err := s.validateAssignee(ctx, task.TeamID, *update.AssigneeID); err != nil {
+	if assigneeID, ok := update.AssigneeID.TryUnwrap(); ok {
+		if err := s.validateAssignee(ctx, task.TeamID, assigneeID); err != nil {
 			return nil, err
 		}
 	}
-	if in.Version != nil && *in.Version != task.Version {
+	if version, ok := in.Version.TryUnwrap(); ok && version != task.Version {
 		return nil, taskdomain.ErrVersionConflict()
 	}
 
@@ -251,8 +253,8 @@ func authorizeTaskUpdate(
 		return nil
 	case task.CreatedBy == actorID:
 		return nil
-	case task.AssigneeID != nil && *task.AssigneeID == actorID:
-		if update.Title != nil || update.Description != nil || update.AssigneeID != nil {
+	case task.AssigneeID.IsSomeAnd(func(assigneeID int64) bool { return assigneeID == actorID }):
+		if update.Title.IsSome() || update.Description.IsSome() || update.AssigneeID.IsSome() {
 			return errs.Forbidden("assignees can only change task status")
 		}
 		return nil

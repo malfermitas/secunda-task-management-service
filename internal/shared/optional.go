@@ -5,34 +5,38 @@ import (
 	"fmt"
 )
 
-type Optional[T any] struct {
+type Optional[T comparable] struct {
 	value T
 	some  bool
 }
 
-func Some[T any](v T) Optional[T] {
+func Some[T comparable](v T) Optional[T] {
 	return Optional[T]{value: v, some: true}
 }
 
-func None[T any]() Optional[T] {
+func None[T comparable]() Optional[T] {
 	return Optional[T]{}
 }
 
-func SomeIf[T any](v T, ok bool) Optional[T] {
+func SomeIf[T comparable](v T, ok bool) Optional[T] {
 	if ok {
 		return Some(v)
 	}
 	return None[T]()
 }
 
-func FromPtr[T any](p *T) Optional[T] {
+func FromPtr[T comparable](p *T) Optional[T] {
 	if p == nil {
 		return None[T]()
 	}
 	return Some(*p)
 }
 
-func FromMap[K comparable, V any](m map[K]V, key K) Optional[V] {
+func (o Optional[T]) Equal(other Optional[T]) bool {
+	return o.value == other.value
+}
+
+func FromMap[K comparable, V comparable](m map[K]V, key K) Optional[V] {
 	v, ok := m[key]
 	return SomeIf(v, ok)
 }
@@ -98,14 +102,14 @@ func (o Optional[T]) ToPtr() *T {
 	return nil
 }
 
-func Map[T, U any](o Optional[T], fn func(T) U) Optional[U] {
+func Map[T, U comparable](o Optional[T], fn func(T) U) Optional[U] {
 	if o.some {
 		return Some(fn(o.value))
 	}
 	return None[U]()
 }
 
-func FlatMap[T, U any](o Optional[T], fn func(T) Optional[U]) Optional[U] {
+func FlatMap[T, U comparable](o Optional[T], fn func(T) Optional[U]) Optional[U] {
 	if o.some {
 		return fn(o.value)
 	}

@@ -1,6 +1,9 @@
 package dto
 
-import taskdomain "secunda-task-management-service/internal/task/domain"
+import (
+	"secunda-task-management-service/internal/shared"
+	taskdomain "secunda-task-management-service/internal/task/domain"
+)
 
 // CreateTaskRequest is the payload for creating a task.
 type CreateTaskRequest struct {
@@ -31,10 +34,10 @@ type ListTasksQuery struct {
 
 // TaskListResponse is the response for GET /tasks.
 type TaskListResponse struct {
-	Items  []TaskResponse `json:"items"`
-	Total  *int64         `json:"total,omitempty"`
-	Limit  int            `json:"limit"`
-	Offset int            `json:"offset"`
+	Items  []TaskResponse         `json:"items"`
+	Total  shared.Optional[int64] `json:"total"`
+	Limit  int                    `json:"limit"`
+	Offset int                    `json:"offset"`
 }
 
 // CreateCommentRequest is the payload for adding a task comment.

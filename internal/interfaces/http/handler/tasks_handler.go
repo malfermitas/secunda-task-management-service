@@ -31,8 +31,8 @@ func (h *TasksHandler) Create(c *gin.Context) {
 	task, err := h.svc.Create(c.Request.Context(), userID, taskapp.CreateInput{
 		TeamID:      req.TeamID,
 		Title:       req.Title,
-		Description: req.Description,
-		AssigneeID:  req.AssigneeID,
+		Description: shared.FromPtr(req.Description),
+		AssigneeID:  shared.FromPtr(req.AssigneeID),
 	})
 	if err != nil {
 		respondError(c, err)
@@ -58,7 +58,7 @@ func (h *TasksHandler) List(c *gin.Context) {
 	in := taskapp.ListInput{
 		TeamID:     query.TeamID,
 		Status:     shared.SomeIf(query.Status, query.Status != ""),
-		AssigneeID: query.AssigneeID,
+		AssigneeID: shared.FromPtr(query.AssigneeID),
 		Limit:      query.Limit,
 		Offset:     query.Offset,
 	}
@@ -96,11 +96,11 @@ func (h *TasksHandler) Update(c *gin.Context) {
 	}
 
 	task, err := h.svc.Update(c.Request.Context(), userID, taskID, taskapp.UpdateInput{
-		Title:       req.Title,
-		Description: req.Description,
-		Status:      req.Status,
-		AssigneeID:  req.AssigneeID,
-		Version:     req.Version,
+		Title:       shared.FromPtr(req.Title),
+		Description: shared.FromPtr(req.Description),
+		Status:      shared.FromPtr(req.Status),
+		AssigneeID:  shared.FromPtr(req.AssigneeID),
+		Version:     shared.FromPtr(req.Version),
 	})
 	if err != nil {
 		respondError(c, err)
