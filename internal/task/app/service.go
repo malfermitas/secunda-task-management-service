@@ -51,8 +51,8 @@ func (s *service) List(ctx context.Context, actorID int64, in ListInput) (*TaskL
 	if _, err := s.membership(ctx, in.TeamID, actorID); err != nil {
 		return nil, err
 	}
-	if in.Status != nil && !in.Status.Valid() {
-		return nil, taskdomain.ErrInvalidStatus(string(*in.Status))
+	if status, ok := in.Status.TryUnwrap(); ok && !status.Valid() {
+		return nil, taskdomain.ErrInvalidStatus(string(status))
 	}
 
 	if in.Limit <= 0 {
@@ -140,7 +140,7 @@ func (s *service) Update(ctx context.Context, actorID, taskID int64, in UpdateIn
 		return nil, err
 	}
 
-	if err := s.tasks.Save(ctx, task, expectedVersion, changes); err != nil {
+	if err := s.tasks.Save(ctx, task, expectedVersion, actorID, changes); err != nil {
 		return nil, err
 	}
 

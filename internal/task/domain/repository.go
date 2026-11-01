@@ -1,11 +1,15 @@
 package domain
 
-import "context"
+import (
+	"context"
+
+	"secunda-task-management-service/internal/shared"
+)
 
 // Filter describes task list criteria.
 type Filter struct {
 	TeamID     int64
-	Status     *Status
+	Status     shared.Optional[Status]
 	AssigneeID *int64
 	Limit      int
 	Offset     int
@@ -24,7 +28,7 @@ type Repository interface {
 	List(ctx context.Context, filter Filter) (*Page, error)
 	// Save persists the task and its history diff atomically, guarding against
 	// concurrent updates with expectedVersion.
-	Save(ctx context.Context, task *Task, expectedVersion uint, changes map[string]any) error
+	Save(ctx context.Context, task *Task, expectedVersion uint, changedBy int64, changes map[string]any) error
 	History(ctx context.Context, taskID int64) ([]HistoryEntry, error)
 	AddComment(ctx context.Context, comment *Comment) error
 	Comments(ctx context.Context, taskID int64) ([]Comment, error)

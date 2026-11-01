@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"secunda-task-management-service/internal/interfaces/http/dto"
+	"secunda-task-management-service/internal/shared"
 	taskapp "secunda-task-management-service/internal/task/app"
 
 	"github.com/gin-gonic/gin"
@@ -56,13 +57,10 @@ func (h *TasksHandler) List(c *gin.Context) {
 
 	in := taskapp.ListInput{
 		TeamID:     query.TeamID,
-		Status:     &query.Status,
+		Status:     shared.SomeIf(query.Status, query.Status != ""),
 		AssigneeID: query.AssigneeID,
 		Limit:      query.Limit,
 		Offset:     query.Offset,
-	}
-	if query.Status == "" {
-		in.Status = nil
 	}
 
 	result, err := h.svc.List(c.Request.Context(), userID, in)

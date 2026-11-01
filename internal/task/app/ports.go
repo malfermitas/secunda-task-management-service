@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"secunda-task-management-service/internal/shared"
 	taskdomain "secunda-task-management-service/internal/task/domain"
 )
 
@@ -26,7 +27,7 @@ type UpdateInput struct {
 // ListInput contains filters and pagination for listing team tasks.
 type ListInput struct {
 	TeamID     int64
-	Status     *taskdomain.Status
+	Status     shared.Optional[taskdomain.Status]
 	AssigneeID *int64
 	Limit      int
 	Offset     int

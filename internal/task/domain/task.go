@@ -113,11 +113,16 @@ func (t *Task) ApplyUpdate(update TaskUpdate, now time.Time) (map[string]any, er
 		}
 		changes["status"] = fieldChange(string(t.Status), string(*update.Status))
 		t.Status = *update.Status
+
+		oldClosedAt := t.ClosedAt
 		if t.Status == StatusDone {
 			closedAt := now.UTC()
 			t.ClosedAt = &closedAt
 		} else {
 			t.ClosedAt = nil
+		}
+		if !equalPtr(oldClosedAt, t.ClosedAt) {
+			changes["closed_at"] = fieldChange(deref(oldClosedAt), deref(t.ClosedAt))
 		}
 	}
 
