@@ -1,0 +1,38 @@
+groups:
+  - name: secunda-api
+    rules:
+      - alert: SecundaHighHTTP5xxRate
+        expr: |
+          sum(rate(secunda_http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+          /
+          sum(rate(secunda_http_server_request_duration_seconds_count[5m]))
+          > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP 5xx rate"
+          description: "More than 1% of requests are failing with 5xx responses."
+
+      - alert: SecundaHighHTTPP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(secunda_http_server_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP P95 latency"
+          description: "P95 request latency is above 1 second."
+
+      - alert: SecundaCacheErrors
+        expr: |
+          sum(rate(secunda_cache_requests_total{cache_result="error"}[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Task cache errors"
+          description: "The task cache is reporting more than 0.5 errors per second."
