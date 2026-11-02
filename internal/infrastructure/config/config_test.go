@@ -13,6 +13,9 @@ const testSecret = "0123456789abcdef0123456789abcdef"
 
 var envKeys = []string{
 	"CONFIG_FILE",
+	"APP_NAME",
+	"APP_ENV",
+	"APP_VERSION",
 	"APP_PORT",
 	"APP_READ_HEADER_TIMEOUT",
 	"APP_READ_TIMEOUT",
@@ -41,6 +44,13 @@ var envKeys = []string{
 	"CACHE_TTL",
 	"LOG_LEVEL",
 	"LOG_FORMAT",
+	"METRICS_ENABLED",
+	"METRICS_ADDR",
+	"METRICS_PATH",
+	"TRACING_ENABLED",
+	"TRACING_ENDPOINT",
+	"TRACING_INSECURE",
+	"TRACING_SAMPLE_RATIO",
 }
 
 func isolateEnv(t *testing.T) {
@@ -105,6 +115,9 @@ func TestLoadDefaults(t *testing.T) {
 func TestEnvOverridesDefaults(t *testing.T) {
 	isolateEnv(t)
 
+	t.Setenv("APP_NAME", "test-service")
+	t.Setenv("APP_ENV", "test")
+	t.Setenv("APP_VERSION", "1.2.3")
 	t.Setenv("APP_PORT", "9090")
 	t.Setenv("DB_PORT", "3307")
 	t.Setenv("DB_MAX_OPEN_CONNS", "10")
@@ -117,14 +130,31 @@ func TestEnvOverridesDefaults(t *testing.T) {
 	t.Setenv("CACHE_TTL", "1m")
 	t.Setenv("LOG_LEVEL", "debug")
 	t.Setenv("LOG_FORMAT", "text")
+	t.Setenv("METRICS_ENABLED", "false")
+	t.Setenv("METRICS_ADDR", ":9191")
+	t.Setenv("METRICS_PATH", "/custom-metrics")
+	t.Setenv("TRACING_ENABLED", "true")
+	t.Setenv("TRACING_ENDPOINT", "collector:4317")
+	t.Setenv("TRACING_INSECURE", "false")
+	t.Setenv("TRACING_SAMPLE_RATIO", "0.25")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
 
+	if cfg.App.Name != "test-service" || cfg.App.Env != "test" || cfg.App.Version != "1.2.3" {
+		t.Errorf("App identity = %+v, want test-service/test/1.2.3", cfg.App)
+	}
 	if cfg.App.Port != 9090 {
 		t.Errorf("App.Port = %d, want 9090", cfg.App.Port)
+	}
+	if cfg.Metrics.Enabled || cfg.Metrics.Addr != ":9191" || cfg.Metrics.Path != "/custom-metrics" {
+		t.Errorf("Metrics = %+v, want disabled :9191 /custom-metrics", cfg.Metrics)
+	}
+	if !cfg.Tracing.Enabled || cfg.Tracing.Endpoint != "collector:4317" ||
+		cfg.Tracing.Insecure || cfg.Tracing.SampleRatio != 0.25 {
+		t.Errorf("Tracing = %+v, want enabled collector:4317 secure 0.25", cfg.Tracing)
 	}
 	if cfg.DB.Port != 3307 {
 		t.Errorf("DB.Port = %d, want 3307", cfg.DB.Port)
@@ -250,7 +280,19 @@ func TestValidation(t *testing.T) {
 		mutate func(*Config)
 		want   string
 	}{
+		{"app name", func(c *Config) { c.App.Name = "" }, "app.name"},
+		{"app env", func(c *Config) { c.App.Env = "" }, "app.env"},
 		{"app port", func(c *Config) { c.App.Port = 0 }, "app.port"},
+		{"metrics addr", func(c *Config) { c.Metrics.Addr = "" }, "metrics.addr"},
+		{"metrics path", func(c *Config) { c.Metrics.Path = "metrics" }, "metrics.path"},
+		{"tracing endpoint", func(c *Config) {
+			c.Tracing.Enabled = true
+			c.Tracing.Endpoint = ""
+		}, "tracing.endpoint"},
+		{"tracing sample ratio", func(c *Config) {
+			c.Tracing.Enabled = true
+			c.Tracing.SampleRatio = 2
+		}, "tracing.sample_ratio"},
 		{"db host", func(c *Config) { c.DB.Host = "" }, "db.host"},
 		{"db password", func(c *Config) { c.DB.Password = "" }, "db.password"},
 		{"db pool", func(c *Config) { c.DB.MaxIdleConns = c.DB.MaxOpenConns + 1 }, "db.max_idle_conns"},
@@ -323,6 +365,12 @@ func TestExampleConfigFile(t *testing.T) {
 	}
 	if cfg.Log.Format != "json" {
 		t.Errorf("Log.Format = %q, want json", cfg.Log.Format)
+	}
+	if !cfg.Metrics.Enabled || cfg.Metrics.Addr != ":9090" {
+		t.Errorf("Metrics = %+v, want enabled :9090", cfg.Metrics)
+	}
+	if cfg.Tracing.Enabled {
+		t.Errorf("Tracing.Enabled = true, want false in example config")
 	}
 }
 

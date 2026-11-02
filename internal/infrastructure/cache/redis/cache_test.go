@@ -2,13 +2,12 @@ package redis
 
 import (
 	"context"
-	"io"
-	"log/slog"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"go.uber.org/zap"
 
 	"secunda-task-management-service/internal/infrastructure/config"
 	"secunda-task-management-service/internal/shared"
@@ -137,6 +136,43 @@ func TestCacheTTL(t *testing.T) {
 	}
 }
 
+func TestCacheEmitsMetrics(t *testing.T) {
+	mr := miniredis.RunT(t)
+	metrics := &fakeMetrics{}
+	cache := NewCache(
+		config.Redis{
+			Addr:         mr.Addr(),
+			PoolSize:     2,
+			DialTimeout:  time.Second,
+			ReadTimeout:  time.Second,
+			WriteTimeout: time.Second,
+		},
+		time.Minute,
+		Dependencies{Logger: discardLogger(), Metrics: metrics},
+	)
+	ctx := context.Background()
+	filterKey := "status:all:assignee:all:limit:20:offset:0"
+
+	key := missKey(t, cache, 7, filterKey)
+	cache.SetTasks(ctx, 7, key, &taskapp.TaskList{})
+	if _, _, ok := cache.GetTasks(ctx, 7, filterKey); !ok {
+		t.Fatal("GetTasks() miss, want hit")
+	}
+	cache.InvalidateTeam(ctx, 7)
+
+	if metrics.requests["miss"] != 1 || metrics.requests["hit"] != 1 {
+		t.Errorf("requests = %v, want one miss and one hit", metrics.requests)
+	}
+	if metrics.operations["get|success"] != 2 ||
+		metrics.operations["set|success"] != 1 ||
+		metrics.operations["invalidate|success"] != 1 {
+		t.Errorf("operations = %v", metrics.operations)
+	}
+	if metrics.invalidations != 1 {
+		t.Errorf("invalidations = %d, want 1", metrics.invalidations)
+	}
+}
+
 func TestCacheFailsOpen(t *testing.T) {
 	mr := miniredis.RunT(t)
 	addr := mr.Addr()
@@ -151,7 +187,7 @@ func TestCacheFailsOpen(t *testing.T) {
 			WriteTimeout: 50 * time.Millisecond,
 		},
 		time.Minute,
-		discardLogger(),
+		Dependencies{Logger: discardLogger()},
 	)
 	defer cache.Close()
 
@@ -203,7 +239,7 @@ func newTestCache(t *testing.T, mr *miniredis.Miniredis, ttl time.Duration) *Cac
 			WriteTimeout: time.Second,
 		},
 		ttl,
-		discardLogger(),
+		Dependencies{Logger: discardLogger()},
 	)
 	t.Cleanup(func() {
 		_ = cache.Close()
@@ -211,6 +247,30 @@ func newTestCache(t *testing.T, mr *miniredis.Miniredis, ttl time.Duration) *Cac
 	return cache
 }
 
-func discardLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+func discardLogger() *zap.Logger {
+	return zap.NewNop()
+}
+
+type fakeMetrics struct {
+	requests      map[string]int
+	operations    map[string]int
+	invalidations int
+}
+
+func (m *fakeMetrics) CacheRequest(_ context.Context, result string) {
+	if m.requests == nil {
+		m.requests = make(map[string]int)
+	}
+	m.requests[result]++
+}
+
+func (m *fakeMetrics) CacheOperation(_ context.Context, operation, result string) {
+	if m.operations == nil {
+		m.operations = make(map[string]int)
+	}
+	m.operations[operation+"|"+result]++
+}
+
+func (m *fakeMetrics) CacheInvalidation(_ context.Context) {
+	m.invalidations++
 }
