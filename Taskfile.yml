@@ -1,0 +1,78 @@
+version: "3"
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  up:
+    desc: Start the application, MySQL, Redis and migrations
+    cmds:
+      - docker compose up --build -d
+
+  down:
+    desc: Stop the Docker Compose stack
+    cmds:
+      - docker compose down
+
+  build:
+    desc: Build all Go packages
+    cmds:
+      - go build ./...
+
+  logs:
+    desc: Follow application logs
+    cmds:
+      - docker compose logs -f app
+
+  ps:
+    desc: Show Docker Compose service status
+    cmds:
+      - docker compose ps
+
+  migrate-up:
+    desc: Apply database migrations
+    cmds:
+      - docker compose run --rm migrate
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test ./...
+
+  test-integration:
+    desc: Run integration tests
+    cmds:
+      - go test -tags=integration ./...
+
+  tidy:
+    desc: Tidy Go module dependencies
+    cmds:
+      - go mod tidy
+
+  fmt:
+    desc: Format Go sources
+    cmds:
+      - gofmt -w cmd internal
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  swagger:
+    desc: Format annotations and regenerate Swagger docs
+    cmds:
+      - go run github.com/swaggo/swag/cmd/swag@v1.16.6 fmt
+      - go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/api/main.go -o docs --parseDependency --parseInternal
+
+  observability-up:
+    desc: Start the app with OTel Collector, Jaeger, Prometheus and Grafana
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build -d
+
+  observability-down:
+    desc: Stop the full observability stack
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.observability.yml down
