@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"secunda-task-management-service/internal/shared/errs"
+	sharedtracing "secunda-task-management-service/internal/shared/tracing"
 	userdomain "secunda-task-management-service/internal/user/domain"
 )
 
@@ -45,6 +48,9 @@ func NewAuthService(users userdomain.Repository, hasher PasswordHasher, tokens T
 }
 
 func (s *authService) Register(ctx context.Context, in RegisterInput) (*userdomain.User, error) {
+	ctx, span := sharedtracing.Start(ctx, "auth.register")
+	defer span.End()
+
 	email, err := userdomain.NewEmail(in.Email)
 	if err != nil {
 		return nil, err
@@ -73,6 +79,9 @@ func (s *authService) Register(ctx context.Context, in RegisterInput) (*userdoma
 }
 
 func (s *authService) Login(ctx context.Context, in LoginInput) (*LoginResult, error) {
+	ctx, span := sharedtracing.Start(ctx, "auth.login")
+	defer span.End()
+
 	email, err := userdomain.NewEmail(in.Email)
 	if err != nil || in.Password == "" {
 		return nil, errs.InvalidCredentials()
@@ -94,5 +103,6 @@ func (s *authService) Login(ctx context.Context, in LoginInput) (*LoginResult, e
 	if err != nil {
 		return nil, err
 	}
+	span.SetAttributes(attribute.Int64("user.id", user.ID))
 	return &LoginResult{Token: token, User: user}, nil
 }

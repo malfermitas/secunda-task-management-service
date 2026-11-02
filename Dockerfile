@@ -15,7 +15,7 @@ FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=build /out/api /api
 
-EXPOSE 8080
+EXPOSE 8080 9090
 
 USER nonroot:nonroot
 

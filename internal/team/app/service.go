@@ -37,6 +37,13 @@ func NewService(teams teamdomain.Repository, users userdomain.Repository) Servic
 }
 
 func (s *service) Create(ctx context.Context, actorID int64, name string) (*teamdomain.Team, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"team.create",
+		attribute.Int64("actor.id", actorID),
+	)
+	defer span.End()
+
 	team, err := teamdomain.NewTeam(name, actorID, time.Now())
 	if err != nil {
 		return nil, err
@@ -48,6 +55,13 @@ func (s *service) Create(ctx context.Context, actorID int64, name string) (*team
 }
 
 func (s *service) List(ctx context.Context, actorID int64) ([]teamdomain.Team, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"team.list",
+		attribute.Int64("actor.id", actorID),
+	)
+	defer span.End()
+
 	teams, err := s.teams.ListByUser(ctx, actorID)
 	if err != nil {
 		return nil, err
@@ -59,6 +73,16 @@ func (s *service) List(ctx context.Context, actorID int64) ([]teamdomain.Team, e
 }
 
 func (s *service) Invite(ctx context.Context, actorID int64, in InviteInput) error {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"team.invite",
+		attribute.Int64("team.id", in.TeamID),
+		attribute.Int64("actor.id", actorID),
+		attribute.Int64("invitee.id", in.UserID),
+		attribute.String("team.role", in.Role),
+	)
+	defer span.End()
+
 	role, err := teamdomain.ParseRole(in.Role)
 	if err != nil {
 		return err

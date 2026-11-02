@@ -3,8 +3,11 @@ package app
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	analyticsdomain "secunda-task-management-service/internal/analytics/domain"
 	"secunda-task-management-service/internal/shared/errs"
+	sharedtracing "secunda-task-management-service/internal/shared/tracing"
 	teamdomain "secunda-task-management-service/internal/team/domain"
 )
 
@@ -24,6 +27,14 @@ func NewService(teams teamdomain.Repository, stats analyticsdomain.Repository) S
 }
 
 func (s *service) TeamStats(ctx context.Context, actorID, teamID int64) (*analyticsdomain.TeamStats, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"analytics.team_stats",
+		attribute.Int64("team.id", teamID),
+		attribute.Int64("actor.id", actorID),
+	)
+	defer span.End()
+
 	membership, err := s.teams.Membership(ctx, teamID, actorID)
 	if err != nil {
 		return nil, err

@@ -70,6 +70,9 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
+      APP_NAME: ${APP_NAME:-secunda-task-management-service}
+      APP_ENV: ${APP_ENV:-local}
+      APP_VERSION: ${APP_VERSION:-dev}
       APP_PORT: ${APP_PORT:-8080}
       APP_READ_HEADER_TIMEOUT: ${APP_READ_HEADER_TIMEOUT:-5s}
       APP_READ_TIMEOUT: ${APP_READ_TIMEOUT:-15s}
@@ -98,8 +101,16 @@ services:
       CACHE_TTL: ${CACHE_TTL:-5m}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_FORMAT: ${LOG_FORMAT:-json}
+      METRICS_ENABLED: ${METRICS_ENABLED:-true}
+      METRICS_ADDR: ${METRICS_ADDR:-:9090}
+      METRICS_PATH: ${METRICS_PATH:-/metrics}
+      TRACING_ENABLED: ${TRACING_ENABLED:-false}
+      TRACING_ENDPOINT: ${TRACING_ENDPOINT:-localhost:4317}
+      TRACING_INSECURE: ${TRACING_INSECURE:-true}
+      TRACING_SAMPLE_RATIO: ${TRACING_SAMPLE_RATIO:-0.1}
     ports:
       - "${APP_PORT:-8080}:${APP_PORT:-8080}"
+      - "127.0.0.1:${METRICS_PORT:-9090}:9090"
     networks:
       - backend
 

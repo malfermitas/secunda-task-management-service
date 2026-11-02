@@ -4,8 +4,11 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"secunda-task-management-service/internal/shared"
 	"secunda-task-management-service/internal/shared/errs"
+	sharedtracing "secunda-task-management-service/internal/shared/tracing"
 	taskdomain "secunda-task-management-service/internal/task/domain"
 	teamdomain "secunda-task-management-service/internal/team/domain"
 )
@@ -29,6 +32,14 @@ func NewService(tasks taskdomain.Repository, teams teamdomain.Repository, cache 
 }
 
 func (s *service) Create(ctx context.Context, actorID int64, in CreateInput) (*taskdomain.Task, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"task.create",
+		attribute.Int64("team.id", in.TeamID),
+		attribute.Int64("actor.id", actorID),
+	)
+	defer span.End()
+
 	if _, err := s.membership(ctx, in.TeamID, actorID); err != nil {
 		return nil, err
 	}
@@ -51,6 +62,16 @@ func (s *service) Create(ctx context.Context, actorID int64, in CreateInput) (*t
 }
 
 func (s *service) List(ctx context.Context, actorID int64, in ListInput) (*TaskList, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"task.list",
+		attribute.Int64("team.id", in.TeamID),
+		attribute.Int64("actor.id", actorID),
+		attribute.Int("task.limit", in.Limit),
+		attribute.Int("task.offset", in.Offset),
+	)
+	defer span.End()
+
 	if _, err := s.membership(ctx, in.TeamID, actorID); err != nil {
 		return nil, err
 	}
@@ -81,6 +102,7 @@ func (s *service) List(ctx context.Context, actorID int64, in ListInput) (*TaskL
 
 	if s.cache != nil {
 		cached, key, ok := s.cache.GetTasks(ctx, in.TeamID, filterKey)
+		span.SetAttributes(attribute.Bool("cache.hit", ok && cached != nil))
 		if ok && cached != nil {
 			return cached, nil
 		}
@@ -109,6 +131,14 @@ func (s *service) List(ctx context.Context, actorID int64, in ListInput) (*TaskL
 }
 
 func (s *service) Update(ctx context.Context, actorID, taskID int64, in UpdateInput) (*taskdomain.Task, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"task.update",
+		attribute.Int64("task.id", taskID),
+		attribute.Int64("actor.id", actorID),
+	)
+	defer span.End()
+
 	task, err := s.tasks.GetByID(ctx, taskID)
 	if err != nil {
 		return nil, err
@@ -156,6 +186,14 @@ func (s *service) Update(ctx context.Context, actorID, taskID int64, in UpdateIn
 }
 
 func (s *service) History(ctx context.Context, actorID, taskID int64) ([]taskdomain.HistoryEntry, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"task.history",
+		attribute.Int64("task.id", taskID),
+		attribute.Int64("actor.id", actorID),
+	)
+	defer span.End()
+
 	if _, err := s.taskForActor(ctx, actorID, taskID); err != nil {
 		return nil, err
 	}
@@ -171,6 +209,14 @@ func (s *service) History(ctx context.Context, actorID, taskID int64) ([]taskdom
 }
 
 func (s *service) AddComment(ctx context.Context, actorID, taskID int64, content string) (*taskdomain.Comment, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"task.add_comment",
+		attribute.Int64("task.id", taskID),
+		attribute.Int64("actor.id", actorID),
+	)
+	defer span.End()
+
 	if _, err := s.taskForActor(ctx, actorID, taskID); err != nil {
 		return nil, err
 	}
@@ -186,6 +232,14 @@ func (s *service) AddComment(ctx context.Context, actorID, taskID int64, content
 }
 
 func (s *service) ListComments(ctx context.Context, actorID, taskID int64) ([]taskdomain.Comment, error) {
+	ctx, span := sharedtracing.Start(
+		ctx,
+		"task.list_comments",
+		attribute.Int64("task.id", taskID),
+		attribute.Int64("actor.id", actorID),
+	)
+	defer span.End()
+
 	if _, err := s.taskForActor(ctx, actorID, taskID); err != nil {
 		return nil, err
 	}

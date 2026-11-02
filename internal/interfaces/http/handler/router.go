@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	analyticsapp "secunda-task-management-service/internal/analytics/app"
 	"secunda-task-management-service/internal/interfaces/http/middleware"
@@ -10,6 +11,11 @@ import (
 	userapp "secunda-task-management-service/internal/user/app"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
+	_ "secunda-task-management-service/docs"
 )
 
 // Dependencies contains the application services required by the HTTP layer.
@@ -19,6 +25,7 @@ type Dependencies struct {
 	Tasks       taskapp.Service
 	Stats       analyticsapp.Service
 	TokenParser middleware.TokenParser
+	ServiceName string
 }
 
 // Router wraps the gin engine and implements http.Handler.
@@ -29,12 +36,22 @@ type Router struct {
 // NewRouter builds the HTTP router with all API routes registered.
 func NewRouter(deps Dependencies) *Router {
 	engine := gin.New()
-	engine.Use(gin.Recovery())
+	engine.Use(otelgin.Middleware(
+		deps.ServiceName,
+		otelgin.WithGinFilter(func(c *gin.Context) bool {
+			path := c.Request.URL.Path
+			return path != "/healthz" && !strings.HasPrefix(path, "/swagger")
+		}),
+	))
+	engine.Use(middleware.RequestID())
+	engine.Use(middleware.Logging())
+	engine.Use(middleware.Recovery())
 
 	authHandler := &AuthHandler{svc: deps.Auth}
 	teamsHandler := &TeamsHandler{teams: deps.Teams, stats: deps.Stats}
 	tasksHandler := &TasksHandler{svc: deps.Tasks}
 
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	engine.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
