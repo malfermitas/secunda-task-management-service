@@ -1,0 +1,888 @@
+basePath: /api/v1
+definitions:
+  secunda-task-management-service_internal_interfaces_http_dto.CommentResponse:
+    properties:
+      content:
+        example: I reproduced this on staging.
+        type: string
+      created_at:
+        example: "2026-11-01T10:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      task_id:
+        example: 10
+        type: integer
+      user_id:
+        example: 2
+        type: integer
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.CreateCommentRequest:
+    properties:
+      content:
+        example: I reproduced this on staging.
+        maxLength: 10000
+        minLength: 1
+        type: string
+    required:
+    - content
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.CreateTaskRequest:
+    properties:
+      assignee_id:
+        example: 5
+        type: integer
+      description:
+        example: Users cannot log in with SSO
+        type: string
+      team_id:
+        example: 1
+        type: integer
+      title:
+        example: Fix login
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - team_id
+    - title
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.CreateTeamRequest:
+    properties:
+      name:
+        example: Platform Team
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.ErrorBody:
+    properties:
+      code:
+        example: validation_error
+        type: string
+      message:
+        example: task title is required
+        type: string
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorBody'
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.HistoryEntryResponse:
+    properties:
+      changed_by:
+        example: 1
+        type: integer
+      changes:
+        type: object
+      created_at:
+        example: "2026-11-01T10:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      task_id:
+        example: 10
+        type: integer
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.InviteRequest:
+    properties:
+      role:
+        enum:
+        - admin
+        - member
+        example: member
+        type: string
+      user_id:
+        example: 2
+        type: integer
+    required:
+    - role
+    - user_id
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.LoginRequest:
+    properties:
+      email:
+        example: jane@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.LoginResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user:
+        $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.UserResponse'
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.RegisterRequest:
+    properties:
+      email:
+        example: jane@example.com
+        maxLength: 255
+        type: string
+      name:
+        example: Jane Doe
+        maxLength: 255
+        minLength: 1
+        type: string
+      password:
+        example: password123
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.TaskCommentCountResponse:
+    properties:
+      count:
+        example: 3
+        type: integer
+      task_id:
+        example: 10
+        type: integer
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.TaskListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TaskResponse'
+        type: array
+      limit:
+        example: 20
+        type: integer
+      offset:
+        example: 0
+        type: integer
+      total:
+        example: 1
+        type: integer
+        x-nullable: true
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.TaskResponse:
+    properties:
+      assignee_id:
+        example: 5
+        type: integer
+        x-nullable: true
+      closed_at:
+        example: "2026-11-01T12:00:00Z"
+        format: date-time
+        type: string
+        x-nullable: true
+      created_at:
+        example: "2026-11-01T10:00:00Z"
+        type: string
+      created_by:
+        example: 1
+        type: integer
+      description:
+        example: Users cannot log in with SSO
+        type: string
+        x-nullable: true
+      id:
+        example: 10
+        type: integer
+      status:
+        enum:
+        - todo
+        - in_progress
+        - done
+        example: todo
+        type: string
+      team_id:
+        example: 1
+        type: integer
+      title:
+        example: Fix login
+        type: string
+      updated_at:
+        example: "2026-11-01T10:00:00Z"
+        type: string
+      version:
+        example: 1
+        type: integer
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.TaskStatusCountResponse:
+    properties:
+      count:
+        example: 5
+        type: integer
+      status:
+        enum:
+        - todo
+        - in_progress
+        - done
+        example: todo
+        type: string
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.TeamResponse:
+    properties:
+      created_at:
+        example: "2026-11-01T10:00:00Z"
+        type: string
+      created_by:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Platform Team
+        type: string
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.TeamStatsResponse:
+    properties:
+      avg_close_seconds:
+        example: 3600
+        type: number
+      by_status:
+        items:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TaskStatusCountResponse'
+        type: array
+      comments_per_task:
+        items:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TaskCommentCountResponse'
+        type: array
+      team_id:
+        example: 1
+        type: integer
+      top_assignees:
+        items:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TopAssigneeResponse'
+        type: array
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.TopAssigneeResponse:
+    properties:
+      closed_count:
+        example: 4
+        type: integer
+      name:
+        example: Jane Doe
+        type: string
+      user_id:
+        example: 5
+        type: integer
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.UpdateTaskRequest:
+    properties:
+      assignee_id:
+        example: 5
+        type: integer
+      description:
+        example: Updated description
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/secunda-task-management-service_internal_task_domain.Status'
+        enum:
+        - todo
+        - in_progress
+        - done
+        example: in_progress
+      title:
+        example: Fix login
+        maxLength: 255
+        minLength: 1
+        type: string
+      version:
+        example: 1
+        type: integer
+    type: object
+  secunda-task-management-service_internal_interfaces_http_dto.UserResponse:
+    properties:
+      created_at:
+        example: "2026-11-01T10:00:00Z"
+        type: string
+      email:
+        example: jane@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Jane Doe
+        type: string
+    type: object
+  secunda-task-management-service_internal_task_domain.Status:
+    enum:
+    - todo
+    - in_progress
+    - done
+    type: string
+    x-enum-varnames:
+    - StatusTodo
+    - StatusInProgress
+    - StatusDone
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: Secunda API Support
+  description: |-
+    REST API for team task management with role-based access, task history, Redis list caching and SQL analytics.
+    Authenticate with `POST /api/v1/login`, then send `Authorization: Bearer <token>` for protected endpoints.
+  license:
+    name: MIT
+  title: Secunda Task Management API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Verifies credentials and returns a bearer token plus the authenticated
+        user.
+      parameters:
+      - description: Login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.LoginResponse'
+        "401":
+          description: Invalid email or password
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      summary: Authenticate and get a JWT
+      tags:
+      - Authentication
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a user account. The email must be unique.
+      parameters:
+      - description: Registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.UserResponse'
+        "409":
+          description: Email already registered
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      summary: Register a user
+      tags:
+      - Authentication
+  /tasks:
+    get:
+      description: Requires team_id and team membership. The list is cached in Redis
+        for 5 minutes per team and filter set.
+      parameters:
+      - description: Team ID
+        example: 1
+        in: query
+        name: team_id
+        required: true
+        type: integer
+      - description: Task status
+        enum:
+        - todo
+        - in_progress
+        - done
+        in: query
+        name: status
+        type: string
+      - description: Assignee user ID
+        example: 5
+        in: query
+        name: assignee_id
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - default: 0
+        description: Page offset
+        in: query
+        minimum: 0
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TaskListResponse'
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "403":
+          description: User is not a team member
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "422":
+          description: Invalid status
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List team tasks
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: Any team member can create a task in their team. The current user
+        becomes the task creator. The assignee must be a member of the same team.
+      parameters:
+      - description: Task payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TaskResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "403":
+          description: User is not a team member
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "422":
+          description: Validation error or assignee is not a team member
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a task
+      tags:
+      - Tasks
+  /tasks/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Owner/admin can edit any team task; a task creator can edit their
+        own task; an assignee can change only status. Version checking prevents lost
+        updates and every change is recorded in history.
+      parameters:
+      - description: Task ID
+        example: 10
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TaskResponse'
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "403":
+          description: Insufficient permissions
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "409":
+          description: Version conflict
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "422":
+          description: Validation error or no changes
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a task
+      tags:
+      - Tasks
+  /tasks/{id}/comments:
+    get:
+      description: Returns task comments in creation order. Only members of the task
+        team can access them.
+      parameters:
+      - description: Task ID
+        example: 10
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.CommentResponse'
+            type: array
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "403":
+          description: User is not a team member
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List task comments
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: Adds a comment to a task. Only members of the task team can comment.
+      parameters:
+      - description: Task ID
+        example: 10
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Comment payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.CreateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.CommentResponse'
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "403":
+          description: User is not a team member
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a task comment
+      tags:
+      - Tasks
+  /tasks/{id}/history:
+    get:
+      description: Returns the ordered change log. Only members of the task team can
+        access it.
+      parameters:
+      - description: Task ID
+        example: 10
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.HistoryEntryResponse'
+            type: array
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "403":
+          description: User is not a team member
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get task history
+      tags:
+      - Tasks
+  /teams:
+    get:
+      description: Returns only teams where the current user is a member or creator.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TeamResponse'
+            type: array
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List current user teams
+      tags:
+      - Teams
+    post:
+      consumes:
+      - application/json
+      description: Creates a team; the current user becomes its owner.
+      parameters:
+      - description: Team payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.CreateTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TeamResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a team
+      tags:
+      - Teams
+  /teams/{id}/invite:
+    post:
+      consumes:
+      - application/json
+      description: Owner or admin only. The owner role cannot be granted through an
+        invite.
+      parameters:
+      - description: Team ID
+        example: 1
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Invite payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.InviteRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Member invited
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "403":
+          description: Only owner or admin can invite
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "404":
+          description: Invitee user not found
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "409":
+          description: User is already a member
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Invite a user to a team
+      tags:
+      - Teams
+  /teams/{team_id}/stats:
+    get:
+      description: Owner or admin only. Returns task counts by status, top-3 assignees
+        by closed tasks in the last 30 days, average close time and comments per task.
+      parameters:
+      - description: Team ID
+        example: 1
+        in: path
+        name: team_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.TeamStatsResponse'
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "403":
+          description: Only owner/admin can view analytics or user is not a team member
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/secunda-task-management-service_internal_interfaces_http_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get team analytics
+      tags:
+      - Analytics
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and the JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

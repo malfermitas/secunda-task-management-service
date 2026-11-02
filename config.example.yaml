@@ -1,0 +1,54 @@
+﻿app:
+  name: secunda-task-management-service
+  env: local
+  version: dev
+  port: 8080
+  read_header_timeout: 5s
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  shutdown_timeout: 10s
+
+db:
+  host: mysql
+  port: 3306
+  user: taskuser
+  password: taskpass
+  name: taskdb
+  max_open_conns: 25
+  max_idle_conns: 25
+  conn_max_lifetime: 5m
+  conn_max_idle_time: 5m
+  connect_timeout: 5s
+
+redis:
+  addr: redis:6379
+  password: ""
+  db: 0
+  pool_size: 10
+  dial_timeout: 2s
+  read_timeout: 1s
+  write_timeout: 1s
+
+jwt:
+  secret: replace-with-a-long-random-secret
+  ttl: 24h
+
+cache:
+  ttl: 5m
+
+log:
+  level: info
+  format: json
+
+metrics:
+  enabled: true
+  addr: ":9090"
+  path: /metrics
+
+tracing:
+  enabled: false
+  endpoint: localhost:4317
+  insecure: true
+  sample_ratio: 0.1
+

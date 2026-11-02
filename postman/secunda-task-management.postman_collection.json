@@ -1,0 +1,581 @@
+﻿{
+  "info": {
+    "name": "Secunda Task Management API",
+    "_postman_id": "f3f8f4f2-6d1a-4d9b-9f4a-2f6a7c8b9d10",
+    "description": "REST API for team task management with role-based access, task history, Redis list caching and SQL analytics.\n\n**Base URL:** `{{baseUrl}}` (default `http://localhost:8080/api/v1`)\n\n**Authentication:** run **Login** first. The test script stores the JWT in `{{token}}`; the collection adds `Authorization: Bearer {{token}}` to protected requests. Register and Login are explicitly public.\n\n**Variables:** `teamId`, `taskId`, `taskVersion`, `inviteeId`, `userId` are populated by request test scripts where possible.\n\n**Roles:** owner and admin can edit any task, invite members and view analytics; members can create tasks and edit only tasks they created or are assigned to (assignees may change status only).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "inviteeId",
+      "value": "2"
+    },
+    {
+      "key": "teamId",
+      "value": "1"
+    },
+    {
+      "key": "taskId",
+      "value": "1"
+    },
+    {
+      "key": "taskVersion",
+      "value": "0"
+    },
+    {
+      "key": "commentId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Public endpoints. No bearer token is required.",
+      "item": [
+        {
+          "name": "Register user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.id) pm.collectionVariables.set('userId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"Jane Doe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "register"
+              ]
+            },
+            "description": "**Register a user** (`POST /api/v1/register`)\n\nPublic. Creates a user account and returns the public user representation. The email must be unique.\n\n**Responses**\n- `201` user created\n- `409` email is already registered\n- `422` validation error\n- `500` internal error\n\nThe test script stores the returned user ID in `{{userId}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.token) pm.collectionVariables.set('token', body.token);",
+                  "if (body.user && body.user.id) pm.collectionVariables.set('userId', body.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "description": "**Authenticate and issue a JWT** (`POST /api/v1/login`)\n\nPublic. Verifies the email/password pair and returns a bearer token plus the authenticated user.\n\n**Responses**\n- `200` authenticated\n- `401` invalid email or password\n- `422` validation error\n- `500` internal error\n\nThe test script stores `token` and `user.id` in collection variables."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Teams",
+      "description": "All endpoints require `Authorization: Bearer {{token}}`. A user sees only teams where they are a member or creator.",
+      "item": [
+        {
+          "name": "Create team",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.id) pm.collectionVariables.set('teamId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Platform Team\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/teams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "**Create a team** (`POST /api/v1/teams`)\n\nBearer required. The current user becomes the team owner.\n\n**Responses**\n- `201` team created\n- `401` authentication required\n- `422` validation error\n- `500` internal error\n\nThe test script stores the new ID in `{{teamId}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "List my teams",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "**List current user teams** (`GET /api/v1/teams`)\n\nBearer required. Returns only teams where the current user is a member or creator. No cross-team data is exposed.\n\n**Responses**\n- `200` array of teams\n- `401` authentication required\n- `500` internal error"
+          },
+          "response": []
+        },
+        {
+          "name": "Invite member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": {{inviteeId}},\n  \"role\": \"member\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/teams/{{teamId}}/invite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "teams",
+                "{{teamId}}",
+                "invite"
+              ]
+            },
+            "description": "**Invite a user to a team** (`POST /api/v1/teams/{id}/invite`)\n\nBearer required. Only the team owner or an admin may invite. Allowed roles: `admin`, `member`; `owner` cannot be granted through an invite. The invitee must exist.\n\n**Path**\n- `id` team ID (`{{teamId}}`)\n\n**Body**\n- `user_id` invitee user ID (`{{inviteeId}}`)\n- `role` `admin` or `member`\n\n**Responses**\n- `204` member invited\n- `401` authentication required\n- `403` only owner/admin can invite\n- `404` invitee user not found\n- `409` user is already a member\n- `422` validation error or owner role requested\n- `500` internal error"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "description": "All endpoints require `Authorization: Bearer {{token}}`. Task visibility is membership-based; the list is cached in Redis for 5 minutes per team and filter set.",
+      "item": [
+        {
+          "name": "Create task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.id) pm.collectionVariables.set('taskId', body.id);",
+                  "if (body.version !== undefined) pm.collectionVariables.set('taskVersion', body.version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"team_id\": {{teamId}},\n  \"title\": \"Fix login\",\n  \"description\": \"Users cannot log in with SSO\",\n  \"assignee_id\": {{inviteeId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "description": "**Create a task** (`POST /api/v1/tasks`)\n\nBearer required. Any member of the team may create a task. The current user becomes the task creator. The optional assignee must be a member of the same team.\n\n**Body**\n- `team_id` target team (`{{teamId}}`)\n- `title` 1-255 characters\n- `description` optional text\n- `assignee_id` optional team member ID (`{{inviteeId}}`)\n\n**Responses**\n- `201` task created\n- `401` authentication required\n- `403` user is not a team member\n- `422` validation error or assignee is not a team member\n- `500` internal error\n\nThe test script stores `taskId` and `taskVersion`. Creation is transactional and records the initial history entry."
+          },
+          "response": []
+        },
+        {
+          "name": "List tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks?team_id={{teamId}}&status=todo&assignee_id={{inviteeId}}&limit=20&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "team_id",
+                  "value": "{{teamId}}",
+                  "description": "Required team ID."
+                },
+                {
+                  "key": "status",
+                  "value": "todo",
+                  "description": "Optional: todo, in_progress, done."
+                },
+                {
+                  "key": "assignee_id",
+                  "value": "{{inviteeId}}",
+                  "description": "Optional assignee ID."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Page size, 1-100."
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Page offset, >= 0."
+                }
+              ]
+            },
+            "description": "**List team tasks** (`GET /api/v1/tasks`)\n\nBearer required. Requires `team_id` and team membership; tasks from other teams are never returned. The result is cached in Redis for 5 minutes per team and normalized filter set.\n\n**Query**\n- `team_id` required\n- `status` optional: `todo`, `in_progress`, `done`\n- `assignee_id` optional\n- `limit` optional, default 20, max 100\n- `offset` optional, default 0\n\n**Responses**\n- `200` `{ items, total, limit, offset }`\n- `400` invalid query parameters\n- `401` authentication required\n- `403` user is not a team member\n- `422` invalid status\n- `500` internal error"
+          },
+          "response": []
+        },
+        {
+          "name": "Update task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.version !== undefined) pm.collectionVariables.set('taskVersion', body.version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Fix login (updated)\",\n  \"status\": \"in_progress\",\n  \"version\": {{taskVersion}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "**Update a task** (`PUT /api/v1/tasks/{id}`)\n\nBearer required. Permissions:\n- owner/admin may edit any task in the team;\n- the task creator may edit title, description, status and assignee;\n- the assignee may change only status;\n- other members cannot edit the task.\n\nUpdates are versioned: send the current `version` to avoid lost updates. Every effective change is written to `task_history` in the same transaction, and the team task-list cache generation is invalidated after commit.\n\n**Path**\n- `id` task ID (`{{taskId}}`)\n\n**Body** (all fields optional; omitted fields are unchanged)\n- `title`, `description`, `status`, `assignee_id`, `version`\n\n**Responses**\n- `200` updated task\n- `401` authentication required\n- `403` insufficient permissions\n- `404` task not found\n- `409` version conflict\n- `422` validation error or no changes\n- `500` internal error\n\nThe test script refreshes `taskVersion`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get task history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}",
+                "history"
+              ]
+            },
+            "description": "**Get task history** (`GET /api/v1/tasks/{id}/history`)\n\nBearer required. Only members of the task team can read the ordered change log. Each entry contains the author, timestamp and old/new values for changed fields.\n\n**Path**\n- `id` task ID (`{{taskId}}`)\n\n**Responses**\n- `200` array of history entries\n- `401` authentication required\n- `403` user is not a team member\n- `404` task not found\n- `500` internal error"
+          },
+          "response": []
+        },
+        {
+          "name": "Add task comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.id) pm.collectionVariables.set('commentId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"I reproduced this on staging.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}",
+                "comments"
+              ]
+            },
+            "description": "**Add a task comment** (`POST /api/v1/tasks/{id}/comments`)\n\nBearer required. Only members of the task team can comment. Comments do not change the task version or invalidate the task-list cache.\n\n**Path**\n- `id` task ID (`{{taskId}}`)\n\n**Body**\n- `content` 1-10000 characters\n\n**Responses**\n- `201` comment created\n- `401` authentication required\n- `403` user is not a team member\n- `404` task not found\n- `422` validation error\n- `500` internal error\n\nThe test script stores the new ID in `{{commentId}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "List task comments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}",
+                "comments"
+              ]
+            },
+            "description": "**List task comments** (`GET /api/v1/tasks/{id}/comments`)\n\nBearer required. Only members of the task team can read comments. Results are ordered by creation time.\n\n**Path**\n- `id` task ID (`{{taskId}}`)\n\n**Responses**\n- `200` array of comments\n- `401` authentication required\n- `403` user is not a team member\n- `404` task not found\n- `500` internal error"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "description": "Aggregated SQL report. Requires team owner or admin.",
+      "item": [
+        {
+          "name": "Team stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teams/{{teamId}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "teams",
+                "{{teamId}}",
+                "stats"
+              ]
+            },
+            "description": "**Get team analytics** (`GET /api/v1/teams/{team_id}/stats`)\n\nBearer required. Only the team owner or admin can access this report, and it is always filtered to the requested `team_id`.\n\n**Path**\n- `team_id` team ID (`{{teamId}}`)\n\n**Report**\n- tasks by status\n- top-3 assignees by closed tasks in the last 30 days\n- average close time in seconds\n- comment count per task\n\nThe report is produced by a single SQL CTE query without N+1.\n\n**Responses**\n- `200` analytics report\n- `401` authentication required\n- `403` only owner/admin can view analytics, or user is not a team member\n- `500` internal error"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
+
