@@ -3,25 +3,31 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"secunda-task-management-service/internal/interfaces/http/dto"
 	"secunda-task-management-service/internal/interfaces/http/middleware"
 	"secunda-task-management-service/internal/shared/errs"
-
-	"github.com/gin-gonic/gin"
+	sharedtracing "secunda-task-management-service/internal/shared/tracing"
 )
 
 func respondError(c *gin.Context, err error) {
+	ctx := c.Request.Context()
+
 	var appErr *errs.Error
 	if errors.As(err, &appErr) {
+		trace.SpanFromContext(ctx).SetAttributes(attribute.String("app.error_code", appErr.Code))
 		respondStatus(c, statusForKind(appErr.Kind), appErr.Code, appErr.Message)
 		return
 	}
 
-	slog.ErrorContext(c.Request.Context(), "request failed", "error", err)
+	sharedtracing.RecordError(trace.SpanFromContext(ctx), err)
+	middleware.SetError(c, err)
 	respondStatus(c, http.StatusInternalServerError, "internal_error", "internal server error")
 }
 

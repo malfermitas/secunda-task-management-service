@@ -5,9 +5,11 @@ import (
 
 	analyticsapp "secunda-task-management-service/internal/analytics/app"
 	"secunda-task-management-service/internal/interfaces/http/dto"
+	sharedlogging "secunda-task-management-service/internal/shared/logging"
 	teamapp "secunda-task-management-service/internal/team/app"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // TeamsHandler handles team and analytics endpoints.
@@ -35,6 +37,10 @@ func (h *TeamsHandler) Create(c *gin.Context) {
 		return
 	}
 
+	sharedlogging.FromContext(c.Request.Context()).Info(
+		"team created",
+		zap.Int64("team_id", team.ID),
+	)
 	c.JSON(http.StatusCreated, dto.NewTeamResponse(*team))
 }
 
@@ -82,6 +88,12 @@ func (h *TeamsHandler) Invite(c *gin.Context) {
 		return
 	}
 
+	sharedlogging.FromContext(c.Request.Context()).Info(
+		"team member invited",
+		zap.Int64("team_id", teamID),
+		zap.Int64("invitee_id", req.UserID),
+		zap.String("role", req.Role),
+	)
 	c.Status(http.StatusNoContent)
 }
 
@@ -103,5 +115,5 @@ func (h *TeamsHandler) Stats(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, stats)
+	c.JSON(http.StatusOK, dto.NewTeamStatsResponse(stats))
 }

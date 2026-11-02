@@ -3,11 +3,13 @@ package handler
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+
 	"secunda-task-management-service/internal/interfaces/http/dto"
 	"secunda-task-management-service/internal/shared"
+	sharedlogging "secunda-task-management-service/internal/shared/logging"
 	taskapp "secunda-task-management-service/internal/task/app"
-
-	"github.com/gin-gonic/gin"
 )
 
 // TasksHandler handles task, history and comment endpoints.
@@ -39,6 +41,11 @@ func (h *TasksHandler) Create(c *gin.Context) {
 		return
 	}
 
+	sharedlogging.FromContext(c.Request.Context()).Info(
+		"task created",
+		zap.Int64("task_id", task.ID),
+		zap.Int64("team_id", task.TeamID),
+	)
 	c.JSON(http.StatusCreated, dto.NewTaskResponse(task))
 }
 
@@ -107,6 +114,12 @@ func (h *TasksHandler) Update(c *gin.Context) {
 		return
 	}
 
+	sharedlogging.FromContext(c.Request.Context()).Info(
+		"task updated",
+		zap.Int64("task_id", task.ID),
+		zap.Int64("team_id", task.TeamID),
+		zap.Uint("version", task.Version),
+	)
 	c.JSON(http.StatusOK, dto.NewTaskResponse(task))
 }
 
@@ -155,6 +168,11 @@ func (h *TasksHandler) AddComment(c *gin.Context) {
 		return
 	}
 
+	sharedlogging.FromContext(c.Request.Context()).Info(
+		"task comment added",
+		zap.Int64("task_id", comment.TaskID),
+		zap.Int64("comment_id", comment.ID),
+	)
 	c.JSON(http.StatusCreated, dto.NewCommentResponse(comment))
 }
 

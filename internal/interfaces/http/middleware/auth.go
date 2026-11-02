@@ -5,6 +5,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+
+	sharedlogging "secunda-task-management-service/internal/shared/logging"
 )
 
 // UserIDKey is the gin context key that stores the authenticated user ID.
@@ -36,6 +39,11 @@ func Auth(parser TokenParser) gin.HandlerFunc {
 		}
 
 		c.Set(UserIDKey, userID)
+		ctx := sharedlogging.WithLogger(
+			c.Request.Context(),
+			sharedlogging.FromContext(c.Request.Context()).With(zap.Int64("user_id", userID)),
+		)
+		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }

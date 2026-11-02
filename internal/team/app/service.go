@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"secunda-task-management-service/internal/shared/errs"
+	sharedtracing "secunda-task-management-service/internal/shared/tracing"
 	teamdomain "secunda-task-management-service/internal/team/domain"
 	userdomain "secunda-task-management-service/internal/user/domain"
 )

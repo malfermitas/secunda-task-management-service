@@ -14,16 +14,21 @@ import (
 
 // Config is the root application configuration.
 type Config struct {
-	App   App   `mapstructure:"app"`
-	DB    DB    `mapstructure:"db"`
-	Redis Redis `mapstructure:"redis"`
-	JWT   JWT   `mapstructure:"jwt"`
-	Cache Cache `mapstructure:"cache"`
-	Log   Log   `mapstructure:"log"`
+	App     App     `mapstructure:"app"`
+	DB      DB      `mapstructure:"db"`
+	Redis   Redis   `mapstructure:"redis"`
+	JWT     JWT     `mapstructure:"jwt"`
+	Cache   Cache   `mapstructure:"cache"`
+	Log     Log     `mapstructure:"log"`
+	Metrics Metrics `mapstructure:"metrics"`
+	Tracing Tracing `mapstructure:"tracing"`
 }
 
-// App holds HTTP server settings.
+// App holds HTTP server and service identity settings.
 type App struct {
+	Name              string        `mapstructure:"name"`
+	Env               string        `mapstructure:"env"`
+	Version           string        `mapstructure:"version"`
 	Port              int           `mapstructure:"port"`
 	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
 	ReadTimeout       time.Duration `mapstructure:"read_timeout"`
@@ -72,6 +77,21 @@ type Cache struct {
 type Log struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
+}
+
+// Metrics holds Prometheus metrics endpoint settings.
+type Metrics struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Addr    string `mapstructure:"addr"`
+	Path    string `mapstructure:"path"`
+}
+
+// Tracing holds OpenTelemetry tracing settings.
+type Tracing struct {
+	Enabled     bool    `mapstructure:"enabled"`
+	Endpoint    string  `mapstructure:"endpoint"`
+	Insecure    bool    `mapstructure:"insecure"`
+	SampleRatio float64 `mapstructure:"sample_ratio"`
 }
 
 // ValidationError aggregates configuration problems.
@@ -142,6 +162,13 @@ func (c Config) Validate() error {
 	validatePositiveDuration(&problems, "app.idle_timeout", c.App.IdleTimeout)
 	validatePositiveDuration(&problems, "app.shutdown_timeout", c.App.ShutdownTimeout)
 
+	if strings.TrimSpace(c.App.Name) == "" {
+		problems = append(problems, "app.name is required")
+	}
+	if strings.TrimSpace(c.App.Env) == "" {
+		problems = append(problems, "app.env is required")
+	}
+
 	if strings.TrimSpace(c.DB.Host) == "" {
 		problems = append(problems, "db.host is required")
 	}
@@ -187,6 +214,23 @@ func (c Config) Validate() error {
 	validatePositiveDuration(&problems, "jwt.ttl", c.JWT.TTL)
 	validatePositiveDuration(&problems, "cache.ttl", c.Cache.TTL)
 
+	if c.Metrics.Enabled {
+		if strings.TrimSpace(c.Metrics.Addr) == "" {
+			problems = append(problems, "metrics.addr is required when metrics are enabled")
+		}
+		if !strings.HasPrefix(strings.TrimSpace(c.Metrics.Path), "/") {
+			problems = append(problems, "metrics.path must start with /")
+		}
+	}
+	if c.Tracing.Enabled {
+		if strings.TrimSpace(c.Tracing.Endpoint) == "" {
+			problems = append(problems, "tracing.endpoint is required when tracing is enabled")
+		}
+		if c.Tracing.SampleRatio < 0 || c.Tracing.SampleRatio > 1 {
+			problems = append(problems, "tracing.sample_ratio must be between 0 and 1")
+		}
+	}
+
 	switch strings.ToLower(strings.TrimSpace(c.Log.Level)) {
 	case "debug", "info", "warn", "error":
 	default:
@@ -217,6 +261,9 @@ func validatePositiveDuration(problems *[]string, name string, value time.Durati
 }
 
 func setDefaults(v *viper.Viper) {
+	v.SetDefault("app.name", "secunda-task-management-service")
+	v.SetDefault("app.env", "local")
+	v.SetDefault("app.version", "dev")
 	v.SetDefault("app.port", 8080)
 	v.SetDefault("app.read_header_timeout", 5*time.Second)
 	v.SetDefault("app.read_timeout", 15*time.Second)
@@ -250,4 +297,13 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.format", "json")
+
+	v.SetDefault("metrics.enabled", true)
+	v.SetDefault("metrics.addr", ":9090")
+	v.SetDefault("metrics.path", "/metrics")
+
+	v.SetDefault("tracing.enabled", false)
+	v.SetDefault("tracing.endpoint", "localhost:4317")
+	v.SetDefault("tracing.insecure", true)
+	v.SetDefault("tracing.sample_ratio", 0.1)
 }
